@@ -1,6 +1,7 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
+import { useRouter } from "next/navigation"
 import { MoreHorizontalIcon, SearchIcon } from "lucide-react"
 
 import { AdminPageHeader } from "@/components/admin/page-header"
@@ -41,9 +42,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { mockCustomers, mockOrders } from "@/lib/admin/mock-data"
+import { api, ApiCustomer } from "@/lib/api"
 import { formatPrice } from "@/lib/currency"
-import { AdminCustomer } from "@/lib/admin/types"
 
 function initials(name: string) {
   return name
@@ -54,10 +54,60 @@ function initials(name: string) {
     .toUpperCase()
 }
 
+function formatDate(iso: string) {
+  return new Date(iso).toLocaleDateString(undefined, {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  })
+}
+
 export default function CustomersPage() {
-  const [customers, setCustomers] = useState<AdminCustomer[]>(mockCustomers)
+  const router = useRouter()
+  const [customers, setCustomers] = useState<ApiCustomer[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [search, setSearch] = useState("")
-  const [selected, setSelected] = useState<AdminCustomer | null>(null)
+  const [selected, setSelected] = useState<ApiCustomer | null>(null)
+  const [selectedDetail, setSelectedDetail] = useState<ApiCustomer | null>(null)
+
+  function handleError(err: unknown) {
+    const message = err instanceof Error ? err.message : "Something went wrong"
+    if (message.includes("401")) {
+      router.push("/admin/login")
+      return
+    }
+    setError(message)
+  }
+
+  async function load() {
+    setLoading(true)
+    setError(null)
+    try {
+      setCustomers(await api.getCustomers())
+    } catch (err) {
+      handleError(err)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    load()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  useEffect(() => {
+    if (!selected) {
+      setSelectedDetail(null)
+      return
+    }
+    api
+      .getCustomer(selected.id)
+      .then(setSelectedDetail)
+      .catch(handleError)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selected])
 
   const filtered = useMemo(
     () =>
@@ -69,26 +119,26 @@ export default function CustomersPage() {
     [customers, search]
   )
 
-  const selectedOrders = useMemo(
-    () =>
-      selected
-        ? mockOrders.filter((o) => o.customerEmail === selected.email)
-        : [],
-    [selected]
-  )
-
-  function toggleBlocked(id: number) {
-    setCustomers((prev) =>
-      prev.map((c) =>
-        c.id === id
-          ? { ...c, status: c.status === "active" ? "blocked" : "active" }
-          : c
+  async function toggleBlocked(customer: ApiCustomer) {
+    try {
+      const updated = await api.updateCustomer(customer.id, {
+        status: customer.status === "active" ? "blocked" : "active",
+      })
+      setCustomers((prev) =>
+        prev.map((c) => (c.id === customer.id ? { ...c, ...updated } : c))
       )
-    )
+    } catch (err) {
+      handleError(err)
+    }
   }
 
-  function remove(id: number) {
-    setCustomers((prev) => prev.filter((c) => c.id !== id))
+  async function remove(id: number) {
+    try {
+      await api.deleteCustomer(id)
+      setCustomers((prev) => prev.filter((c) => c.id !== id))
+    } catch (err) {
+      handleError(err)
+    }
   }
 
   return (
@@ -99,6 +149,12 @@ export default function CustomersPage() {
       />
 
       <div className="px-4 lg:px-6">
+        {error && (
+          <p className="mb-4 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+            {error}
+          </p>
+        )}
+
         <div className="relative mb-4 max-w-sm">
           <SearchIcon className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
@@ -122,95 +178,102 @@ export default function CustomersPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filtered.map((customer) => (
-                <TableRow key={customer.id}>
-                  <TableCell>
-                    <button
-                      className="flex items-center gap-3 text-left"
-                      onClick={() => setSelected(customer)}
-                    >
-                      <Avatar className="size-8">
-                        <AvatarFallback className="text-xs">
-                          {initials(customer.name)}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <div className="font-medium">{customer.name}</div>
-                        <div className="text-xs text-muted-foreground">
-                          {customer.email}
-                        </div>
-                      </div>
-                    </button>
-                  </TableCell>
-                  <TableCell>{customer.ordersCount}</TableCell>
-                  <TableCell>{formatPrice(customer.totalSpent)}</TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {customer.joinedDate}
-                  </TableCell>
-                  <TableCell>
-                    <Badge
-                      variant={
-                        customer.status === "active" ? "default" : "outline"
-                      }
-                    >
-                      {customer.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="size-8">
-                          <MoreHorizontalIcon />
-                          <span className="sr-only">Open menu</span>
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => setSelected(customer)}>
-                          View details
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={() => toggleBlocked(customer.id)}
-                        >
-                          {customer.status === "active"
-                            ? "Block customer"
-                            : "Unblock customer"}
-                        </DropdownMenuItem>
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <DropdownMenuItem
-                              onSelect={(e) => e.preventDefault()}
-                              className="text-destructive focus:text-destructive"
-                            >
-                              Delete
-                            </DropdownMenuItem>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>
-                                Delete {customer.name}?
-                              </AlertDialogTitle>
-                              <AlertDialogDescription>
-                                This can&apos;t be undone. Their account and
-                                order history reference will be removed from
-                                this list.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Cancel</AlertDialogCancel>
-                              <AlertDialogAction
-                                onClick={() => remove(customer.id)}
-                              >
-                                Delete
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+              {loading && (
+                <TableRow>
+                  <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
+                    Loading customers...
                   </TableCell>
                 </TableRow>
-              ))}
-              {filtered.length === 0 && (
+              )}
+              {!loading &&
+                filtered.map((customer) => (
+                  <TableRow key={customer.id}>
+                    <TableCell>
+                      <button
+                        className="flex items-center gap-3 text-left"
+                        onClick={() => setSelected(customer)}
+                      >
+                        <Avatar className="size-8">
+                          <AvatarFallback className="text-xs">
+                            {initials(customer.name)}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <div className="font-medium">{customer.name}</div>
+                          <div className="text-xs text-muted-foreground">
+                            {customer.email}
+                          </div>
+                        </div>
+                      </button>
+                    </TableCell>
+                    <TableCell>{customer.ordersCount ?? 0}</TableCell>
+                    <TableCell>{formatPrice(customer.totalSpent ?? 0)}</TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {formatDate(customer.createdAt)}
+                    </TableCell>
+                    <TableCell>
+                      <Badge
+                        variant={
+                          customer.status === "active" ? "default" : "outline"
+                        }
+                      >
+                        {customer.status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="size-8">
+                            <MoreHorizontalIcon />
+                            <span className="sr-only">Open menu</span>
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => setSelected(customer)}>
+                            View details
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => toggleBlocked(customer)}
+                          >
+                            {customer.status === "active"
+                              ? "Block customer"
+                              : "Unblock customer"}
+                          </DropdownMenuItem>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <DropdownMenuItem
+                                onSelect={(e) => e.preventDefault()}
+                                className="text-destructive focus:text-destructive"
+                              >
+                                Delete
+                              </DropdownMenuItem>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>
+                                  Delete {customer.name}?
+                                </AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  This can&apos;t be undone. Customers with
+                                  existing orders can&apos;t be deleted.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() => remove(customer.id)}
+                                >
+                                  Delete
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              {!loading && filtered.length === 0 && (
                 <TableRow>
                   <TableCell
                     colSpan={6}
@@ -241,15 +304,17 @@ export default function CustomersPage() {
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div>
                     <p className="text-muted-foreground">Orders</p>
-                    <p className="font-medium">{selected.ordersCount}</p>
+                    <p className="font-medium">{selected.ordersCount ?? 0}</p>
                   </div>
                   <div>
                     <p className="text-muted-foreground">Total spent</p>
-                    <p className="font-medium">{formatPrice(selected.totalSpent)}</p>
+                    <p className="font-medium">
+                      {formatPrice(selected.totalSpent ?? 0)}
+                    </p>
                   </div>
                   <div>
                     <p className="text-muted-foreground">Joined</p>
-                    <p className="font-medium">{selected.joinedDate}</p>
+                    <p className="font-medium">{formatDate(selected.createdAt)}</p>
                   </div>
                   <div>
                     <p className="text-muted-foreground">Status</p>
@@ -262,12 +327,12 @@ export default function CustomersPage() {
                 <div>
                   <p className="mb-2 text-sm font-medium">Order history</p>
                   <div className="flex flex-col gap-2">
-                    {selectedOrders.length === 0 && (
+                    {(!selectedDetail || selectedDetail.orders?.length === 0) && (
                       <p className="text-sm text-muted-foreground">
-                        No orders on record.
+                        {selectedDetail ? "No orders on record." : "Loading..."}
                       </p>
                     )}
-                    {selectedOrders.map((order) => (
+                    {selectedDetail?.orders?.map((order) => (
                       <div
                         key={order.id}
                         className="flex items-center justify-between text-sm"
@@ -277,7 +342,7 @@ export default function CustomersPage() {
                             {order.orderNumber}
                           </span>{" "}
                           <span className="text-muted-foreground">
-                            · {order.date}
+                            · {formatDate(order.createdAt)}
                           </span>
                         </div>
                         <div className="flex items-center gap-2">

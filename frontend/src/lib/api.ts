@@ -67,6 +67,57 @@ export type SubCategoryInput = {
   categoryId: number;
 };
 
+export type OrderStatus = "pending" | "processing" | "shipped" | "delivered" | "cancelled";
+
+export type ApiOrderItem = {
+  id: number;
+  orderId: number;
+  productId: number | null;
+  productTitle: string;
+  price: number;
+  quantity: number;
+};
+
+export type ApiCustomer = {
+  id: number;
+  name: string;
+  email: string;
+  phone: string | null;
+  status: "active" | "blocked";
+  createdAt: string;
+  updatedAt: string;
+  ordersCount?: number;
+  totalSpent?: number;
+  orders?: ApiOrder[];
+};
+
+export type ApiOrder = {
+  id: number;
+  orderNumber: string;
+  customerId: number;
+  customer: ApiCustomer;
+  items: ApiOrderItem[];
+  total: number;
+  status: OrderStatus;
+  shippingAddress: string;
+  shippingCity: string;
+  shippingPhone: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type CheckoutInput = {
+  customer: { name: string; email: string; phone?: string };
+  shipping: { address: string; city: string; phone?: string };
+  items: { productId: number; quantity: number }[];
+};
+
+export type CustomerUpdateInput = {
+  name?: string;
+  phone?: string;
+  status?: "active" | "blocked";
+};
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const token = getToken();
   const res = await fetch(`${API_URL}${path}`, {
@@ -145,4 +196,20 @@ export const api = {
     request<ApiProduct>(`/api/products/${id}`, { method: "PUT", body: JSON.stringify(data) }),
   deleteProduct: (id: number) =>
     request<void>(`/api/products/${id}`, { method: "DELETE" }),
+
+  createOrder: (data: CheckoutInput) =>
+    request<ApiOrder>("/api/orders", { method: "POST", body: JSON.stringify(data) }),
+  getOrders: (params?: { status?: string; search?: string }) =>
+    request<ApiOrder[]>(`/api/orders${toQuery(params)}`),
+  getOrder: (id: number) => request<ApiOrder>(`/api/orders/${id}`),
+  updateOrderStatus: (id: number, status: OrderStatus) =>
+    request<ApiOrder>(`/api/orders/${id}`, { method: "PUT", body: JSON.stringify({ status }) }),
+
+  getCustomers: (params?: { search?: string }) =>
+    request<ApiCustomer[]>(`/api/customers${toQuery(params)}`),
+  getCustomer: (id: number) => request<ApiCustomer>(`/api/customers/${id}`),
+  updateCustomer: (id: number, data: CustomerUpdateInput) =>
+    request<ApiCustomer>(`/api/customers/${id}`, { method: "PUT", body: JSON.stringify(data) }),
+  deleteCustomer: (id: number) =>
+    request<void>(`/api/customers/${id}`, { method: "DELETE" }),
 };

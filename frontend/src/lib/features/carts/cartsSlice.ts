@@ -160,6 +160,11 @@ export const cartsSlice = createSlice({
           calcAdjustedTotalPrice(isItemInCart.price, isItemInCart, 1);
       }
     },
+    clearCart: (state) => {
+      state.cart = null;
+      state.totalPrice = 0;
+      state.adjustedTotalPrice = 0;
+    },
     remove: (
       state,
       action: PayloadAction<RemoveCartItem & { quantity: number }>
@@ -197,6 +202,6 @@ export const cartsSlice = createSlice({
   },
 });
 
-export const { addToCart, removeCartItem, remove } = cartsSlice.actions;
+export const { addToCart, removeCartItem, remove, clearCart } = cartsSlice.actions;
 
 export default cartsSlice.reducer;

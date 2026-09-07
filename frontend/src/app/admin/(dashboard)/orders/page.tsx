@@ -1,6 +1,7 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
+import { useRouter } from "next/navigation"
 import { SearchIcon } from "lucide-react"
 
 import { AdminPageHeader } from "@/components/admin/page-header"
@@ -30,9 +31,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { mockOrders } from "@/lib/admin/mock-data"
+import { api, ApiOrder, OrderStatus } from "@/lib/api"
 import { formatPrice } from "@/lib/currency"
-import { AdminOrder, OrderStatus } from "@/lib/admin/types"
 
 const STATUS_TABS: { value: OrderStatus | "all"; label: string }[] = [
   { value: "all", label: "All" },
@@ -43,30 +43,72 @@ const STATUS_TABS: { value: OrderStatus | "all"; label: string }[] = [
   { value: "cancelled", label: "Cancelled" },
 ]
 
+function formatDate(iso: string) {
+  return new Date(iso).toLocaleDateString(undefined, {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  })
+}
+
 export default function OrdersPage() {
-  const [orders, setOrders] = useState<AdminOrder[]>(mockOrders)
+  const router = useRouter()
+  const [orders, setOrders] = useState<ApiOrder[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [search, setSearch] = useState("")
   const [statusFilter, setStatusFilter] = useState<OrderStatus | "all">("all")
-  const [selected, setSelected] = useState<AdminOrder | null>(null)
+  const [selected, setSelected] = useState<ApiOrder | null>(null)
+
+  function handleError(err: unknown) {
+    const message = err instanceof Error ? err.message : "Something went wrong"
+    if (message.includes("401")) {
+      router.push("/admin/login")
+      return
+    }
+    setError(message)
+  }
+
+  async function load() {
+    setLoading(true)
+    setError(null)
+    try {
+      setOrders(await api.getOrders())
+    } catch (err) {
+      handleError(err)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    load()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const filtered = useMemo(
     () =>
       orders.filter((order) => {
         const matchesStatus =
           statusFilter === "all" || order.status === statusFilter
+        const q = search.toLowerCase()
         const matchesSearch =
-          order.orderNumber.toLowerCase().includes(search.toLowerCase()) ||
-          order.customerName.toLowerCase().includes(search.toLowerCase())
+          order.orderNumber.toLowerCase().includes(q) ||
+          order.customer.name.toLowerCase().includes(q) ||
+          order.customer.email.toLowerCase().includes(q)
         return matchesStatus && matchesSearch
       }),
     [orders, search, statusFilter]
   )
 
-  function updateStatus(id: number, status: OrderStatus) {
-    setOrders((prev) =>
-      prev.map((o) => (o.id === id ? { ...o, status } : o))
-    )
-    setSelected((prev) => (prev && prev.id === id ? { ...prev, status } : prev))
+  async function updateStatus(id: number, status: OrderStatus) {
+    try {
+      const updated = await api.updateOrderStatus(id, status)
+      setOrders((prev) => prev.map((o) => (o.id === id ? updated : o)))
+      setSelected((prev) => (prev && prev.id === id ? updated : prev))
+    } catch (err) {
+      handleError(err)
+    }
   }
 
   return (
@@ -77,6 +119,12 @@ export default function OrdersPage() {
       />
 
       <div className="px-4 lg:px-6">
+        {error && (
+          <p className="mb-4 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+            {error}
+          </p>
+        )}
+
         <div className="mb-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <Tabs
             value={statusFilter}
@@ -116,39 +164,47 @@ export default function OrdersPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filtered.map((order) => (
-                <TableRow key={order.id}>
-                  <TableCell className="font-medium">
-                    {order.orderNumber}
-                  </TableCell>
-                  <TableCell>
-                    <div>{order.customerName}</div>
-                    <div className="text-xs text-muted-foreground">
-                      {order.customerEmail}
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {order.date}
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {order.items.reduce((n, i) => n + i.quantity, 0)}
-                  </TableCell>
-                  <TableCell>{formatPrice(order.total)}</TableCell>
-                  <TableCell>
-                    <OrderStatusBadge status={order.status} />
-                  </TableCell>
-                  <TableCell>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setSelected(order)}
-                    >
-                      View
-                    </Button>
+              {loading && (
+                <TableRow>
+                  <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
+                    Loading orders...
                   </TableCell>
                 </TableRow>
-              ))}
-              {filtered.length === 0 && (
+              )}
+              {!loading &&
+                filtered.map((order) => (
+                  <TableRow key={order.id}>
+                    <TableCell className="font-medium">
+                      {order.orderNumber}
+                    </TableCell>
+                    <TableCell>
+                      <div>{order.customer.name}</div>
+                      <div className="text-xs text-muted-foreground">
+                        {order.customer.email}
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {formatDate(order.createdAt)}
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {order.items.reduce((n, i) => n + i.quantity, 0)}
+                    </TableCell>
+                    <TableCell>{formatPrice(order.total)}</TableCell>
+                    <TableCell>
+                      <OrderStatusBadge status={order.status} />
+                    </TableCell>
+                    <TableCell>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setSelected(order)}
+                      >
+                        View
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              {!loading && filtered.length === 0 && (
                 <TableRow>
                   <TableCell
                     colSpan={7}
@@ -172,26 +228,40 @@ export default function OrdersPage() {
             <>
               <SheetHeader>
                 <SheetTitle>{selected.orderNumber}</SheetTitle>
-                <SheetDescription>Placed on {selected.date}</SheetDescription>
+                <SheetDescription>
+                  Placed on {formatDate(selected.createdAt)}
+                </SheetDescription>
               </SheetHeader>
 
               <div className="mt-6 flex flex-col gap-6 px-4">
                 <div>
                   <p className="mb-1 text-sm font-medium">Customer</p>
                   <p className="text-sm text-muted-foreground">
-                    {selected.customerName}
+                    {selected.customer.name}
                   </p>
                   <p className="text-sm text-muted-foreground">
-                    {selected.customerEmail}
+                    {selected.customer.email}
+                  </p>
+                  {selected.customer.phone && (
+                    <p className="text-sm text-muted-foreground">
+                      {selected.customer.phone}
+                    </p>
+                  )}
+                </div>
+
+                <div>
+                  <p className="mb-1 text-sm font-medium">Shipping</p>
+                  <p className="text-sm text-muted-foreground">
+                    {selected.shippingAddress}, {selected.shippingCity}
                   </p>
                 </div>
 
                 <div>
                   <p className="mb-2 text-sm font-medium">Items</p>
                   <div className="flex flex-col gap-2">
-                    {selected.items.map((item, i) => (
+                    {selected.items.map((item) => (
                       <div
-                        key={i}
+                        key={item.id}
                         className="flex items-center justify-between text-sm"
                       >
                         <span>

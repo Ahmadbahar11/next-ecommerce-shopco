@@ -5,6 +5,8 @@ import categoriesRouter from "./routes/categories";
 import subCategoriesRouter from "./routes/subcategories";
 import productsRouter from "./routes/products";
 import authRouter from "./routes/auth";
+import ordersRouter from "./routes/orders";
+import customersRouter from "./routes/customers";
 
 const app = express();
 
@@ -19,6 +21,8 @@ app.use("/api/auth", authRouter);
 app.use("/api/categories", categoriesRouter);
 app.use("/api/subcategories", subCategoriesRouter);
 app.use("/api/products", productsRouter);
+app.use("/api/orders", ordersRouter);
+app.use("/api/customers", customersRouter);
 
 app.use((req, res) => {
   res.status(404).json({ error: `No route for ${req.method} ${req.path}` });

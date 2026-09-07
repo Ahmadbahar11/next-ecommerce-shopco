@@ -75,6 +75,57 @@ model Product {
   category           Category      @relation(fields: [categoryId], references: [id], onDelete: Restrict)
   subCategoryId      Int?
   subCategory        SubCategory?  @relation(fields: [subCategoryId], references: [id], onDelete: Restrict)
+  orderItems         OrderItem[]
   createdAt          DateTime      @default(now())
   updatedAt          DateTime      @updatedAt
+}
+
+enum CustomerStatus {
+  active
+  blocked
+}
+
+model Customer {
+  id        Int            @id @default(autoincrement())
+  name      String
+  email     String         @unique
+  phone     String?
+  status    CustomerStatus @default(active)
+  orders    Order[]
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+}
+
+enum OrderStatus {
+  pending
+  processing
+  shipped
+  delivered
+  cancelled
+}
+
+model Order {
+  id              Int         @id @default(autoincrement())
+  orderNumber     String      @unique
+  customerId      Int
+  customer        Customer    @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  items           OrderItem[]
+  total           Int
+  status          OrderStatus @default(pending)
+  shippingAddress String
+  shippingCity    String
+  shippingPhone   String?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+}
+
+model OrderItem {
+  id           Int      @id @default(autoincrement())
+  orderId      Int
+  order        Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId    Int?
+  product      Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+  productTitle String
+  price        Int
+  quantity     Int
 }
