@@ -1,0 +1,80 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Condition {
+  new
+  used
+}
+
+enum Role {
+  admin
+  editor
+  viewer
+}
+
+model User {
+  id           Int      @id @default(autoincrement())
+  name         String
+  email        String   @unique
+  passwordHash String
+  role         Role     @default(viewer)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+enum ProductStatus {
+  active
+  draft
+}
+
+model Category {
+  id            Int           @id @default(autoincrement())
+  name          String
+  slug          String        @unique
+  description   String?
+  subCategories SubCategory[]
+  products      Product[]
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+}
+
+model SubCategory {
+  id          Int      @id @default(autoincrement())
+  name        String
+  slug        String   @unique
+  description String?
+  categoryId  Int
+  category    Category @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  products    Product[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Product {
+  id                 Int           @id @default(autoincrement())
+  title              String
+  slug               String        @unique
+  description        String?
+  srcUrl             String
+  gallery            String[]
+  brand              String
+  condition          Condition     @default(new)
+  size               String
+  price              Int
+  discountPercentage Int           @default(0)
+  stock              Int           @default(0)
+  status             ProductStatus @default(draft)
+  rating             Float         @default(0)
+  categoryId         Int
+  category           Category      @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  subCategoryId      Int?
+  subCategory        SubCategory?  @relation(fields: [subCategoryId], references: [id], onDelete: Restrict)
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+}

@@ -1,0 +1,37 @@
+import "dotenv/config";
+import express from "express";
+import cors from "cors";
+import categoriesRouter from "./routes/categories";
+import subCategoriesRouter from "./routes/subcategories";
+import productsRouter from "./routes/products";
+import authRouter from "./routes/auth";
+
+const app = express();
+
+app.use(cors());
+app.use(express.json());
+
+app.get("/health", (_req, res) => {
+  res.json({ status: "ok" });
+});
+
+app.use("/api/auth", authRouter);
+app.use("/api/categories", categoriesRouter);
+app.use("/api/subcategories", subCategoriesRouter);
+app.use("/api/products", productsRouter);
+
+app.use((req, res) => {
+  res.status(404).json({ error: `No route for ${req.method} ${req.path}` });
+});
+
+app.use(
+  (err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
+    console.error(err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+);
+
+const port = Number(process.env.PORT) || 4000;
+app.listen(port, () => {
+  console.log(`shopco-backend listening on http://localhost:${port}`);
+});
