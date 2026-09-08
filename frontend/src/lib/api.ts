@@ -26,6 +26,15 @@ export type ApiCategory = {
   updatedAt: string;
 };
 
+export type ApiLookupOption = {
+  id: number;
+  name: string;
+  slug: string;
+  productCount?: number;
+  createdAt: string;
+  updatedAt: string;
+};
+
 export type ApiProduct = {
   id: number;
   title: string;
@@ -186,6 +195,28 @@ export const api = {
     request<ApiSubCategory>(`/api/subcategories/${id}`, { method: "PUT", body: JSON.stringify(data) }),
   deleteSubCategory: (id: number) =>
     request<void>(`/api/subcategories/${id}`, { method: "DELETE" }),
+
+  getProductBrands: () => request<ApiLookupOption[]>("/api/product-brands"),
+  createProductBrand: (data: { name: string; slug?: string }) =>
+    request<ApiLookupOption>("/api/product-brands", { method: "POST", body: JSON.stringify(data) }),
+  updateProductBrand: (id: number, data: { name?: string; slug?: string }) =>
+    request<ApiLookupOption>(`/api/product-brands/${id}`, { method: "PUT", body: JSON.stringify(data) }),
+  deleteProductBrand: (id: number) =>
+    request<void>(`/api/product-brands/${id}`, { method: "DELETE" }),
+  getProductConditions: () => request<ApiLookupOption[]>("/api/product-conditions"),
+  createProductCondition: (data: { name: string; slug?: string }) =>
+    request<ApiLookupOption>("/api/product-conditions", { method: "POST", body: JSON.stringify(data) }),
+  updateProductCondition: (id: number, data: { name?: string; slug?: string }) =>
+    request<ApiLookupOption>(`/api/product-conditions/${id}`, { method: "PUT", body: JSON.stringify(data) }),
+  deleteProductCondition: (id: number) =>
+    request<void>(`/api/product-conditions/${id}`, { method: "DELETE" }),
+  getProductStatuses: () => request<ApiLookupOption[]>("/api/product-statuses"),
+  createProductStatus: (data: { name: string; slug?: string }) =>
+    request<ApiLookupOption>("/api/product-statuses", { method: "POST", body: JSON.stringify(data) }),
+  updateProductStatus: (id: number, data: { name?: string; slug?: string }) =>
+    request<ApiLookupOption>(`/api/product-statuses/${id}`, { method: "PUT", body: JSON.stringify(data) }),
+  deleteProductStatus: (id: number) =>
+    request<void>(`/api/product-statuses/${id}`, { method: "DELETE" }),
 
   getProducts: (params?: Record<string, string | number | undefined>) =>
     request<ApiProduct[]>(`/api/products${toQuery(params)}`),

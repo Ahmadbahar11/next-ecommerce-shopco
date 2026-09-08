@@ -8,6 +8,25 @@ async function main() {
   await prisma.product.deleteMany();
   await prisma.subCategory.deleteMany();
   await prisma.category.deleteMany();
+  await prisma.productBrand.deleteMany();
+  await prisma.productConditionOption.deleteMany();
+  await prisma.productStatusOption.deleteMany();
+
+  const defaultBrands = ["adidas", "Nike", "PUMA", "New Balance", "Under Armour", "ASICS", "Skechers", "Jordan", "Converse", "Reebok", "FILA", "Hummel", "Veja"];
+  const defaultConditions = ["new", "used"];
+  const defaultStatuses = ["active", "draft"];
+
+  await prisma.productBrand.createMany({
+    data: defaultBrands.map((name) => ({ name, slug: name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") })),
+  });
+
+  await prisma.productConditionOption.createMany({
+    data: defaultConditions.map((name) => ({ name, slug: name.toLowerCase() })),
+  });
+
+  await prisma.productStatusOption.createMany({
+    data: defaultStatuses.map((name) => ({ name, slug: name.toLowerCase() })),
+  });
 
   const adminEmail = process.env.SEED_ADMIN_EMAIL ?? "admin@shopco.com";
   const adminPassword = process.env.SEED_ADMIN_PASSWORD ?? "ChangeMe123!";

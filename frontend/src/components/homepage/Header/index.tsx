@@ -9,7 +9,7 @@ import * as motion from "framer-motion/client";
 
 const Header = () => {
   return (
-    <header className="bg-[#F2F0F1] pt-10 md:pt-24 overflow-hidden">
+    <header className="bg-[#F2F0F1] pt-10 md:pt-24 pb-8 md:pb-12 overflow-hidden">
       <div className="md:max-w-frame mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2">
         <section className="max-w-frame px-4">
           <motion.h2
@@ -93,24 +93,22 @@ const Header = () => {
           whileInView={{ y: "0", opacity: 1, rotate: 0 }}
           viewport={{ once: true }}
           transition={{ delay: 2.3, duration: 0.8 }}
-          className="relative md:px-4 min-h-[448px] md:min-h-[428px] bg-cover bg-top xl:bg-[center_top_-1.6rem] bg-no-repeat bg-[url('/images/football/hero.svg')]"
+          className="relative md:px-4 min-h-[448px] md:min-h-[400px]"
         >
+          <div className="absolute inset-0 rounded-[28px] bg-gradient-to-r from-black/10 via-transparent to-white/10" />
           <Image
             priority
-            src="/icons/big-star.svg"
-            height={104}
-            width={104}
-            alt="big star"
-            className="absolute right-7 xl:right-0 top-12 max-w-[76px] max-h-[76px] lg:max-w-24 lg:max-h-max-w-24 xl:max-w-[104px] xl:max-h-[104px] animate-[spin_4s_infinite]"
+            src="/images/Banner%202.jpg"
+            fill
+            alt="Premium shoes banner"
+            className="object-cover object-center rounded-[28px]"
           />
-          <Image
-            priority
-            src="/icons/small-star.svg"
-            height={56}
-            width={56}
-            alt="small star"
-            className="absolute left-7 md:left-0 top-36 sm:top-64 md:top-44 lg:top-56 max-w-11 max-h-11 md:max-w-14 md:max-h-14 animate-[spin_3s_infinite]"
-          />
+          {/* <div className="absolute left-5 top-5 rounded-full bg-white/80 px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-black shadow-sm backdrop-blur-sm md:left-8 md:top-8">
+            New Drop
+          </div>
+          <div className="absolute right-5 bottom-5 rounded-full bg-black px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-white shadow-lg md:right-8 md:bottom-8">
+            30% OFF
+          </div> */}
         </motion.section>
       </div>
     </header>

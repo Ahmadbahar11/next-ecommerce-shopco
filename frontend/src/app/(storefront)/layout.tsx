@@ -16,22 +16,20 @@ export const viewport: Viewport = {
   themeColor: "#000000",
 };
 
-export default function RootLayout({
+export default function StorefrontLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body className={satoshi.className}>
-        <HolyLoader color="#868686" />
-        <TopBanner />
-        <Providers>
-          <TopNavbar />
-          {children}
-        </Providers>
-        <Footer />
-      </body>
-    </html>
+    <>
+      <HolyLoader color="#868686" />
+      <TopBanner />
+      <Providers>
+        <TopNavbar />
+        {children}
+      </Providers>
+      <Footer />
+    </>
   );
 }

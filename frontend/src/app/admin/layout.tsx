@@ -12,9 +12,5 @@ export default function AdminRootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  return (
-    <html lang="en">
-      <body className={satoshi.className}>{children}</body>
-    </html>
-  );
+  return <>{children}</>;
 }

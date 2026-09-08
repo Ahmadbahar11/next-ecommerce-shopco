@@ -6,6 +6,40 @@ import { authenticate, authorize } from "../middleware/auth";
 const router = Router();
 const requireAdmin: RequestHandler[] = [authenticate, authorize("admin")];
 
+const slugify = (value: string) =>
+  value
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "");
+
+async function upsertBrandId(name: string) {
+  const value = name.trim();
+  return prisma.productBrand.upsert({
+    where: { name: value },
+    update: {},
+    create: { name: value, slug: slugify(value) },
+  }).then((record) => record.id);
+}
+
+async function upsertConditionId(name: string) {
+  const value = name.trim();
+  return prisma.productConditionOption.upsert({
+    where: { name: value },
+    update: {},
+    create: { name: value, slug: slugify(value) },
+  }).then((record) => record.id);
+}
+
+async function upsertStatusId(name: string) {
+  const value = name.trim();
+  return prisma.productStatusOption.upsert({
+    where: { name: value },
+    update: {},
+    create: { name: value, slug: slugify(value) },
+  }).then((record) => record.id);
+}
+
 const productInput = z.object({
   title: z.string().min(1),
   slug: z.string().min(1),
@@ -58,7 +92,7 @@ router.get("/", async (req, res) => {
 
   const products = await prisma.product.findMany({
     where,
-    include: { category: true, subCategory: true },
+    include: { category: true, subCategory: true, brandOption: true, conditionOption: true, statusOption: true },
     orderBy: { id: "desc" },
   });
   res.json(products);
@@ -69,7 +103,7 @@ router.get("/:id", async (req, res) => {
   const id = Number(req.params.id);
   const product = await prisma.product.findUnique({
     where: { id },
-    include: { category: true, subCategory: true },
+    include: { category: true, subCategory: true, brandOption: true, conditionOption: true, statusOption: true },
   });
   if (!product) return res.status(404).json({ error: "Product not found" });
   res.json(product);
@@ -89,7 +123,19 @@ router.post("/", requireAdmin, async (req: Request, res: Response) => {
   if (validationError) return res.status(400).json({ error: validationError });
 
   try {
-    const product = await prisma.product.create({ data: parsed.data });
+    const brandId = await upsertBrandId(parsed.data.brand);
+    const conditionId = await upsertConditionId(parsed.data.condition);
+    const statusId = await upsertStatusId(parsed.data.status);
+
+    const product = await prisma.product.create({
+      data: {
+        ...parsed.data,
+        brandId,
+        conditionId,
+        statusId,
+      },
+      include: { category: true, subCategory: true, brandOption: true, conditionOption: true, statusOption: true },
+    });
     res.status(201).json(product);
   } catch (err: any) {
     if (err.code === "P2002") {
@@ -119,9 +165,19 @@ router.put("/:id", requireAdmin, async (req: Request, res: Response) => {
   }
 
   try {
+    const brandId = parsed.data.brand ? await upsertBrandId(parsed.data.brand) : undefined;
+    const conditionId = parsed.data.condition ? await upsertConditionId(parsed.data.condition) : undefined;
+    const statusId = parsed.data.status ? await upsertStatusId(parsed.data.status) : undefined;
+
     const product = await prisma.product.update({
       where: { id },
-      data: parsed.data,
+      data: {
+        ...parsed.data,
+        ...(brandId !== undefined ? { brandId } : {}),
+        ...(conditionId !== undefined ? { conditionId } : {}),
+        ...(statusId !== undefined ? { statusId } : {}),
+      },
+      include: { category: true, subCategory: true, brandOption: true, conditionOption: true, statusOption: true },
     });
     res.json(product);
   } catch (err: any) {

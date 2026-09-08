@@ -10,6 +10,7 @@ import {
   MapPinIcon,
   MegaphoneIcon,
   PackageIcon,
+  TagsIcon,
   SearchIcon,
   SettingsIcon,
   ShoppingBagIcon,
@@ -65,6 +66,11 @@ const data = {
       title: "Categories",
       url: "/admin/categories",
       icon: ListTreeIcon,
+    },
+    {
+      title: "Product Metadata",
+      url: "/admin/product-metadata",
+      icon: TagsIcon,
     },
     {
       title: "Navigation Menu",

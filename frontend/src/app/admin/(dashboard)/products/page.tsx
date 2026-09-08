@@ -1,9 +1,9 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
-import { MoreHorizontalIcon, PlusIcon, SearchIcon } from "lucide-react"
+import { MoreHorizontalIcon, PlusIcon, SearchIcon, UploadCloudIcon } from "lucide-react"
 
 import { AdminPageHeader } from "@/components/admin/page-header"
 import { Badge } from "@/components/ui/badge"
@@ -51,8 +51,14 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { api, ApiCategory, ApiProduct, ProductInput } from "@/lib/api"
+import { api, ApiCategory, ApiLookupOption, ApiProduct, ProductInput } from "@/lib/api"
 import { formatPrice } from "@/lib/currency"
+import {
+  UK_SIZE_OPTIONS,
+  formatUkSizeInput,
+  getUkSizeMetadata,
+  getUkSizeValue,
+} from "@/lib/size"
 
 function slugify(value: string) {
   return value
@@ -84,6 +90,9 @@ export default function ProductsPage() {
   const router = useRouter()
   const [products, setProducts] = useState<ApiProduct[]>([])
   const [categories, setCategories] = useState<ApiCategory[]>([])
+  const [brandOptions, setBrandOptions] = useState<ApiLookupOption[]>([])
+  const [conditionOptions, setConditionOptions] = useState<ApiLookupOption[]>([])
+  const [statusOptions, setStatusOptions] = useState<ApiLookupOption[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [search, setSearch] = useState("")
@@ -91,17 +100,26 @@ export default function ProductsPage() {
   const [editingId, setEditingId] = useState<number | null>(null)
   const [form, setForm] = useState<ProductInput>(emptyProduct)
   const [saving, setSaving] = useState(false)
+  const [galleryUploading, setGalleryUploading] = useState(false)
+  const galleryInputRef = useRef<HTMLInputElement | null>(null)
+  const sizeMeta = useMemo(() => getUkSizeMetadata(form.size), [form.size])
 
   async function load() {
     setLoading(true)
     setError(null)
     try {
-      const [productList, categoryList] = await Promise.all([
+      const [productList, categoryList, brandList, conditionList, statusList] = await Promise.all([
         api.getProducts(),
         api.getCategories(),
+        api.getProductBrands(),
+        api.getProductConditions(),
+        api.getProductStatuses(),
       ])
       setProducts(productList)
       setCategories(categoryList)
+      setBrandOptions(brandList)
+      setConditionOptions(conditionList)
+      setStatusOptions(statusList)
     } catch (err) {
       handleError(err)
     } finally {
@@ -163,10 +181,15 @@ export default function ProductsPage() {
     setSaving(true)
     setError(null)
     try {
+      const payload = { ...form }
+      if (!payload.srcUrl && (payload.gallery ?? []).length > 0) {
+        payload.srcUrl = payload.gallery[0]
+      }
+
       if (editingId === null) {
-        await api.createProduct(form)
+        await api.createProduct(payload)
       } else {
-        await api.updateProduct(editingId, form)
+        await api.updateProduct(editingId, payload)
       }
       setDialogOpen(false)
       await load()
@@ -175,6 +198,104 @@ export default function ProductsPage() {
     } finally {
       setSaving(false)
     }
+  }
+
+  async function compressImage(file: File) {
+    if (file.type === "image/webp" && file.size < 700 * 1024) return file
+
+    return new Promise<File>((resolve, reject) => {
+      const objectUrl = URL.createObjectURL(file)
+      const img = new window.Image()
+
+      img.onload = () => {
+        const maxDimension = 1400
+        const scale = Math.min(1, maxDimension / Math.max(img.width, img.height))
+        const canvas = document.createElement("canvas")
+        canvas.width = Math.max(1, Math.round(img.width * scale))
+        canvas.height = Math.max(1, Math.round(img.height * scale))
+
+        const ctx = canvas.getContext("2d")
+        if (!ctx) {
+          URL.revokeObjectURL(objectUrl)
+          reject(new Error("Canvas is not supported in this browser."))
+          return
+        }
+
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
+
+        canvas.toBlob(
+          (blob) => {
+            URL.revokeObjectURL(objectUrl)
+            if (!blob) {
+              reject(new Error("Could not compress image."))
+              return
+            }
+
+            resolve(
+              new File([blob], file.name.replace(/\.[^.]+$/, ".webp"), {
+                type: "image/webp",
+                lastModified: Date.now(),
+              })
+            )
+          },
+          "image/webp",
+          0.82
+        )
+      }
+
+      img.onerror = () => {
+        URL.revokeObjectURL(objectUrl)
+        reject(new Error("Could not read the selected image."))
+      }
+
+      img.src = objectUrl
+    })
+  }
+
+  async function uploadProductGallery(files: FileList | null) {
+    if (!files || files.length === 0) return
+
+    setGalleryUploading(true)
+    setError(null)
+
+    try {
+      const compressedFiles = await Promise.all(
+        Array.from(files).map(async (file) => compressImage(file))
+      )
+
+      const formData = new FormData()
+      compressedFiles.forEach((file) => formData.append("files", file))
+
+      const apiBase = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000"
+      const res = await fetch(`${apiBase}/api/upload`, {
+        method: "POST",
+        body: formData,
+      })
+
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        throw new Error(data.error ?? "Gallery upload failed")
+      }
+
+      const uploadedUrls = Array.isArray(data.urls) ? data.urls : [data.url].filter(Boolean)
+      setForm((f) => ({
+        ...f,
+        gallery: [...(f.gallery ?? []), ...uploadedUrls],
+        srcUrl: f.srcUrl || uploadedUrls[0] || f.srcUrl,
+      }))
+    } catch (err) {
+      handleError(err)
+    } finally {
+      setGalleryUploading(false)
+      if (galleryInputRef.current) galleryInputRef.current.value = ""
+    }
+  }
+
+  function removeGalleryImage(index: number) {
+    setForm((f) => ({
+      ...f,
+      gallery: (f.gallery ?? []).filter((_, i) => i !== index),
+    }))
   }
 
   async function remove(id: number) {
@@ -244,7 +365,7 @@ export default function ProductsPage() {
                       <div className="flex items-center gap-3">
                         <div className="relative size-10 shrink-0 overflow-hidden rounded-md border bg-muted">
                           <Image
-                            src={product.srcUrl}
+                            src={product.gallery?.[0] ?? product.srcUrl}
                             alt={product.title}
                             fill
                             sizes="40px"
@@ -461,21 +582,33 @@ export default function ProductsPage() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="active">Active</SelectItem>
-                    <SelectItem value="draft">Draft</SelectItem>
+                    {statusOptions.map((option) => (
+                      <SelectItem key={option.id} value={option.slug}>
+                        {option.name}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="brand">Brand</Label>
-                <Input
-                  id="brand"
-                  placeholder="e.g. adidas"
-                  value={form.brand}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, brand: e.target.value }))
+                <Select
+                  value={form.brand || ""}
+                  onValueChange={(value) =>
+                    setForm((f) => ({ ...f, brand: value }))
                   }
-                />
+                >
+                  <SelectTrigger id="brand">
+                    <SelectValue placeholder="Select brand" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {brandOptions.map((brand) => (
+                      <SelectItem key={brand.id} value={brand.name}>
+                        {brand.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="condition">Condition</Label>
@@ -492,21 +625,40 @@ export default function ProductsPage() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="new">Brand New</SelectItem>
-                    <SelectItem value="used">Pre-Owned</SelectItem>
+                    {conditionOptions.map((option) => (
+                      <SelectItem key={option.id} value={option.slug}>
+                        {option.name}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="size">Size</Label>
-                <Input
-                  id="size"
-                  placeholder="e.g. UK 9 or M"
-                  value={form.size}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, size: e.target.value }))
+                <Select
+                  value={getUkSizeValue(form.size)}
+                  onValueChange={(value) =>
+                    setForm((f) => ({ ...f, size: formatUkSizeInput(value) }))
                   }
-                />
+                >
+                  <SelectTrigger id="size">
+                    <SelectValue placeholder="Select UK size" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {UK_SIZE_OPTIONS.map((size) => (
+                      <SelectItem key={size} value={size}>
+                        {`UK ${size}`}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {sizeMeta.uk && (
+                  <div className="mt-2 flex flex-wrap gap-2 text-xs text-muted-foreground">
+                    <span className="rounded-full border px-2 py-1">{sizeMeta.uk}</span>
+                    <span className="rounded-full border px-2 py-1">{sizeMeta.us}</span>
+                    <span className="rounded-full border px-2 py-1">{sizeMeta.eu}</span>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -550,14 +702,55 @@ export default function ProductsPage() {
             </div>
 
             <div className="grid gap-2">
-              <Label htmlFor="image">Image URL</Label>
-              <Input
-                id="image"
-                value={form.srcUrl}
-                onChange={(e) =>
-                  setForm((f) => ({ ...f, srcUrl: e.target.value }))
-                }
-              />
+              <Label>Gallery images</Label>
+              <div className="flex flex-col gap-3">
+                <div className="flex items-center gap-3">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => galleryInputRef.current?.click()}
+                    disabled={galleryUploading}
+                    className="w-fit"
+                  >
+                    <UploadCloudIcon className="mr-2 size-4" />
+                    {galleryUploading ? "Uploading..." : "Upload gallery"}
+                  </Button>
+                  <input
+                    ref={galleryInputRef}
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    className="hidden"
+                    onChange={(e) => uploadProductGallery(e.target.files)}
+                  />
+                </div>
+
+                {form.gallery?.length ? (
+                  <div className="grid grid-cols-4 gap-2">
+                    {form.gallery.map((image, index) => (
+                      <div key={`${image}-${index}`} className="group relative h-20 w-full overflow-hidden rounded-md border bg-muted">
+                        <Image
+                          src={image}
+                          alt={`Gallery ${index + 1}`}
+                          fill
+                          sizes="80px"
+                          className="object-cover"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => removeGalleryImage(index)}
+                          className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-black/75 text-[10px] text-white opacity-0 transition-opacity group-hover:opacity-100"
+                          aria-label={`Remove gallery image ${index + 1}`}
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">No gallery images added yet.</p>
+                )}
+              </div>
             </div>
           </div>
 
