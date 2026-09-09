@@ -3,8 +3,8 @@ import "@/styles/globals.css";
 import { satoshi } from "@/styles/fonts";
 
 export const metadata: Metadata = {
-  title: "Shopco Admin",
-  description: "Admin dashboard for managing Shopco",
+  title: "Thrift Quest PK Admin",
+  description: "Admin dashboard for managing Thrift Quest PK",
 };
 
 export default function AdminRootLayout({

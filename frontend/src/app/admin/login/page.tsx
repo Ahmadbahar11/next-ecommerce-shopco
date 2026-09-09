@@ -54,7 +54,7 @@ function LoginForm() {
         <CardHeader className="items-center text-center">
           <div className="mb-2 flex items-center gap-2">
             <ShoppingBagIcon className="size-5" />
-            <span className="text-base font-semibold">Shopco Admin</span>
+            <span className="text-base font-semibold">Thrift Quest PK Admin</span>
           </div>
           <CardTitle>Sign in</CardTitle>
           <CardDescription>Sign in to manage your store.</CardDescription>

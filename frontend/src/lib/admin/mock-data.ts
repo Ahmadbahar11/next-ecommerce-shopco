@@ -207,7 +207,7 @@ export const mockBanner = {
 };
 
 export const mockBranding = {
-  storeName: "SHOP.CO",
+  storeName: "Thrift Quest PK",
   tagline:
     "Boots, jerseys, and match-day gear from top brands — carefully inspected and guaranteed authentic.",
   logoUrl: "",

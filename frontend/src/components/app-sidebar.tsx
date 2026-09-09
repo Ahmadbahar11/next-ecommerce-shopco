@@ -106,7 +106,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             >
               <a href="/admin">
                 <ShoppingBagIcon className="h-5 w-5" />
-                <span className="text-base font-semibold">Shopco Admin</span>
+                <span className="text-base font-semibold">Thrift Quest PK Admin</span>
               </a>
             </SidebarMenuButton>
           </SidebarMenuItem>

@@ -16,7 +16,11 @@ function readStoredBranding(): StoreBranding {
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);
     if (!raw) return mockBranding;
-    return { ...mockBranding, ...JSON.parse(raw) };
+    const stored = { ...mockBranding, ...JSON.parse(raw) };
+    if (stored.storeName === "SHOP.CO") {
+      return { ...stored, storeName: mockBranding.storeName };
+    }
+    return stored;
   } catch {
     return mockBranding;
   }
