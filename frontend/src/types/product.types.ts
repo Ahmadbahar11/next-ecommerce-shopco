@@ -14,7 +14,7 @@ export type Product = {
   rating: number;
   description?: string;
   brand?: string;
-  condition?: "new" | "used";
+  condition?: string;
   size?: string;
   stock?: number;
   categoryId?: number;

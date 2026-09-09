@@ -43,12 +43,12 @@ export type ApiProduct = {
   srcUrl: string;
   gallery: string[];
   brand: string;
-  condition: "new" | "used";
+  condition: string;
   size: string;
   price: number;
   discountPercentage: number;
   stock: number;
-  status: "active" | "draft";
+  status: string;
   rating: number;
   categoryId: number;
   category?: { id: number; name: string; slug: string };

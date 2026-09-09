@@ -15,29 +15,59 @@ const slugify = (value: string) =>
 
 async function upsertBrandId(name: string) {
   const value = name.trim();
-  return prisma.productBrand.upsert({
-    where: { name: value },
-    update: {},
-    create: { name: value, slug: slugify(value) },
-  }).then((record) => record.id);
+  try {
+    const existing = await prisma.productBrand.findFirst({
+      where: { OR: [{ name: value }, { slug: value }] },
+      select: { id: true },
+    });
+    if (existing) return existing.id;
+    return await prisma.productBrand.upsert({
+      where: { name: value },
+      update: {},
+      create: { name: value, slug: slugify(value) },
+    }).then((record) => record.id);
+  } catch (err: any) {
+    if (err.code === "P2002") throw { ...err, lookup: "brand" };
+    throw err;
+  }
 }
 
 async function upsertConditionId(name: string) {
   const value = name.trim();
-  return prisma.productConditionOption.upsert({
-    where: { name: value },
-    update: {},
-    create: { name: value, slug: slugify(value) },
-  }).then((record) => record.id);
+  try {
+    const existing = await prisma.productConditionOption.findFirst({
+      where: { OR: [{ name: value }, { slug: value }] },
+      select: { id: true },
+    });
+    if (existing) return existing.id;
+    return await prisma.productConditionOption.upsert({
+      where: { name: value },
+      update: {},
+      create: { name: value, slug: slugify(value) },
+    }).then((record) => record.id);
+  } catch (err: any) {
+    if (err.code === "P2002") throw { ...err, lookup: "condition" };
+    throw err;
+  }
 }
 
 async function upsertStatusId(name: string) {
   const value = name.trim();
-  return prisma.productStatusOption.upsert({
-    where: { name: value },
-    update: {},
-    create: { name: value, slug: slugify(value) },
-  }).then((record) => record.id);
+  try {
+    const existing = await prisma.productStatusOption.findFirst({
+      where: { OR: [{ name: value }, { slug: value }] },
+      select: { id: true },
+    });
+    if (existing) return existing.id;
+    return await prisma.productStatusOption.upsert({
+      where: { name: value },
+      update: {},
+      create: { name: value, slug: slugify(value) },
+    }).then((record) => record.id);
+  } catch (err: any) {
+    if (err.code === "P2002") throw { ...err, lookup: "status" };
+    throw err;
+  }
 }
 
 const productInput = z.object({
@@ -47,12 +77,12 @@ const productInput = z.object({
   srcUrl: z.string().min(1),
   gallery: z.array(z.string()).optional().default([]),
   brand: z.string().min(1),
-  condition: z.enum(["new", "used"]).default("new"),
+  condition: z.string().min(1).default("new"),
   size: z.string().optional().default(""),
   price: z.number().int().nonnegative(),
   discountPercentage: z.number().int().min(0).max(100).default(0),
   stock: z.number().int().min(0).default(0),
-  status: z.enum(["active", "draft"]).default("draft"),
+  status: z.string().min(1).default("draft"),
   rating: z.number().min(0).max(5).default(0),
   categoryId: z.number().int().positive(),
   subCategoryId: z.number().int().positive().nullable().optional(),
@@ -66,6 +96,18 @@ function presentProduct(product: any) {
     condition: conditionOption?.slug ?? conditionOption?.name ?? "",
     status: statusOption?.slug ?? statusOption?.name ?? "",
   };
+}
+
+function uniqueProductError(err: any) {
+  if (err?.lookup === "brand") return "This brand name or slug already exists";
+  if (err?.lookup === "condition") return "This condition name or slug already exists";
+  if (err?.lookup === "status") return "This status name or slug already exists";
+  const target = Array.isArray(err?.meta?.target) ? err.meta.target.join(",") : String(err?.meta?.target ?? "");
+  if (target.includes("slug")) return "A product with this slug already exists";
+  if (target.includes("ProductBrand")) return "This brand name or slug already exists";
+  if (target.includes("ProductConditionOption")) return "This condition name or slug already exists";
+  if (target.includes("ProductStatusOption")) return "This status name or slug already exists";
+  return "A value with these details already exists";
 }
 
 async function validateCategoryPair(categoryId: number, subCategoryId?: number | null) {
@@ -150,7 +192,7 @@ router.post("/", requireAdmin, async (req: Request, res: Response) => {
     res.status(201).json(presentProduct(product));
   } catch (err: any) {
     if (err.code === "P2002") {
-      return res.status(409).json({ error: "A product with this slug already exists" });
+      return res.status(409).json({ error: uniqueProductError(err) });
     }
     throw err;
   }
@@ -194,7 +236,7 @@ router.put("/:id", requireAdmin, async (req: Request, res: Response) => {
     res.json(presentProduct(product));
   } catch (err: any) {
     if (err.code === "P2002") {
-      return res.status(409).json({ error: "A product with this slug already exists" });
+      return res.status(409).json({ error: uniqueProductError(err) });
     }
     throw err;
   }
