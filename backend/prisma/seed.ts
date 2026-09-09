@@ -115,8 +115,17 @@ async function main() {
     },
   });
 
-  await prisma.product.createMany({
-    data: [
+  const brandIds = new Map(
+    (await prisma.productBrand.findMany({ select: { id: true, name: true } })).map((brand) => [brand.name, brand.id])
+  );
+  const conditionIds = new Map(
+    (await prisma.productConditionOption.findMany({ select: { id: true, name: true } })).map((condition) => [condition.name, condition.id])
+  );
+  const statusIds = new Map(
+    (await prisma.productStatusOption.findMany({ select: { id: true, name: true } })).map((status) => [status.name, status.id])
+  );
+
+  const seededProducts = [
       {
         title: "Predator Elite FG Boots",
         slug: "predator-elite-fg-boots",
@@ -305,7 +314,15 @@ async function main() {
         rating: 4,
         categoryId: shinGuards.id,
       },
-    ],
+    ];
+
+  await prisma.product.createMany({
+    data: seededProducts.map(({ brand, condition, status, ...product }) => ({
+      ...product,
+      brandId: brandIds.get(brand)!,
+      conditionId: conditionIds.get(condition)!,
+      statusId: statusIds.get(status)!,
+    })),
   });
 
   console.log("Seed complete.");

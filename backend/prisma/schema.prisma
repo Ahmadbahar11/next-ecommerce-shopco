@@ -7,11 +7,6 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum Condition {
-  new
-  used
-}
-
 enum Role {
   admin
   editor
@@ -26,11 +21,6 @@ model User {
   role         Role     @default(viewer)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
-}
-
-enum ProductStatus {
-  active
-  draft
 }
 
 model ProductBrand {
@@ -90,13 +80,10 @@ model Product {
   description        String?
   srcUrl             String
   gallery            String[]
-  brand              String
-  condition          Condition               @default(new)
   size               String
   price              Int
   discountPercentage Int                     @default(0)
   stock              Int                     @default(0)
-  status             ProductStatus           @default(draft)
   rating             Float                   @default(0)
   categoryId         Int
   category           Category                @relation(fields: [categoryId], references: [id], onDelete: Restrict)

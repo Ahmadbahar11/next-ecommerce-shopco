@@ -58,6 +58,16 @@ const productInput = z.object({
   subCategoryId: z.number().int().positive().nullable().optional(),
 });
 
+function presentProduct(product: any) {
+  const { brandOption, conditionOption, statusOption, ...base } = product;
+  return {
+    ...base,
+    brand: brandOption?.name ?? "",
+    condition: conditionOption?.slug ?? conditionOption?.name ?? "",
+    status: statusOption?.slug ?? statusOption?.name ?? "",
+  };
+}
+
 async function validateCategoryPair(categoryId: number, subCategoryId?: number | null) {
   const category = await prisma.category.findUnique({ where: { id: categoryId } });
   if (!category) return "categoryId does not exist";
@@ -80,9 +90,9 @@ router.get("/", async (req, res) => {
 
   if (categoryId) where.categoryId = Number(categoryId);
   if (subCategoryId) where.subCategoryId = Number(subCategoryId);
-  if (brand) where.brand = { equals: String(brand), mode: "insensitive" };
-  if (condition) where.condition = String(condition);
-  if (status) where.status = String(status);
+  if (brand) where.brandOption = { name: { equals: String(brand), mode: "insensitive" } };
+  if (condition) where.conditionOption = { slug: String(condition) };
+  if (status) where.statusOption = { slug: String(status) };
   if (search) where.title = { contains: String(search), mode: "insensitive" };
   if (minPrice || maxPrice) {
     where.price = {};
@@ -95,7 +105,7 @@ router.get("/", async (req, res) => {
     include: { category: true, subCategory: true, brandOption: true, conditionOption: true, statusOption: true },
     orderBy: { id: "desc" },
   });
-  res.json(products);
+  res.json(products.map(presentProduct));
 });
 
 // GET /api/products/:id
@@ -106,7 +116,7 @@ router.get("/:id", async (req, res) => {
     include: { category: true, subCategory: true, brandOption: true, conditionOption: true, statusOption: true },
   });
   if (!product) return res.status(404).json({ error: "Product not found" });
-  res.json(product);
+  res.json(presentProduct(product));
 });
 
 // POST /api/products
@@ -126,17 +136,18 @@ router.post("/", requireAdmin, async (req: Request, res: Response) => {
     const brandId = await upsertBrandId(parsed.data.brand);
     const conditionId = await upsertConditionId(parsed.data.condition);
     const statusId = await upsertStatusId(parsed.data.status);
+    const { brand, condition, status, ...productData } = parsed.data;
 
     const product = await prisma.product.create({
       data: {
-        ...parsed.data,
+        ...productData,
         brandId,
         conditionId,
         statusId,
       },
       include: { category: true, subCategory: true, brandOption: true, conditionOption: true, statusOption: true },
     });
-    res.status(201).json(product);
+    res.status(201).json(presentProduct(product));
   } catch (err: any) {
     if (err.code === "P2002") {
       return res.status(409).json({ error: "A product with this slug already exists" });
@@ -169,17 +180,18 @@ router.put("/:id", requireAdmin, async (req: Request, res: Response) => {
     const conditionId = parsed.data.condition ? await upsertConditionId(parsed.data.condition) : undefined;
     const statusId = parsed.data.status ? await upsertStatusId(parsed.data.status) : undefined;
 
+    const { brand, condition, status, ...productData } = parsed.data;
     const product = await prisma.product.update({
       where: { id },
       data: {
-        ...parsed.data,
+        ...productData,
         ...(brandId !== undefined ? { brandId } : {}),
         ...(conditionId !== undefined ? { conditionId } : {}),
         ...(statusId !== undefined ? { statusId } : {}),
       },
       include: { category: true, subCategory: true, brandOption: true, conditionOption: true, statusOption: true },
     });
-    res.json(product);
+    res.json(presentProduct(product));
   } catch (err: any) {
     if (err.code === "P2002") {
       return res.status(409).json({ error: "A product with this slug already exists" });

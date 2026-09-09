@@ -57,7 +57,10 @@ router.post("/", async (req: Request, res: Response) => {
       });
 
       const productIds = items.map((i) => i.productId);
-      const products = await tx.product.findMany({ where: { id: { in: productIds } } });
+      const products = await tx.product.findMany({
+        where: { id: { in: productIds } },
+        include: { statusOption: true },
+      });
       const productMap = new Map(products.map((p) => [p.id, p]));
 
       let total = 0;
@@ -71,7 +74,9 @@ router.post("/", async (req: Request, res: Response) => {
       for (const item of items) {
         const product = productMap.get(item.productId);
         if (!product) throw new Error(`PRODUCT_NOT_FOUND:${item.productId}`);
-        if (product.status !== "active") throw new Error(`PRODUCT_UNAVAILABLE:${product.title}`);
+        if (product.statusOption?.slug !== "active") {
+          throw new Error(`PRODUCT_UNAVAILABLE:${product.title}`);
+        }
         if (product.stock < item.quantity) throw new Error(`INSUFFICIENT_STOCK:${product.title}`);
 
         const unitPrice = computeUnitPrice(product.price, product.discountPercentage);
