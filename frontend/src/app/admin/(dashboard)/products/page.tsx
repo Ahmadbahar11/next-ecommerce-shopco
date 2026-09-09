@@ -380,7 +380,7 @@ export default function ProductsPage() {
                         <div className="flex flex-col">
                           <span className="font-medium">{product.title}</span>
                           <span className="text-xs text-muted-foreground">
-                            {product.condition === "new" ? "Brand New" : "Pre-Owned"}
+                            {product.condition}
                             {product.size && ` · ${product.size}`}
                           </span>
                         </div>

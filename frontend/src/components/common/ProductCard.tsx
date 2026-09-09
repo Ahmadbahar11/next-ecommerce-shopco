@@ -18,13 +18,9 @@ const ProductCard = ({ data }: ProductCardProps) => {
       <div className="relative bg-[#F0EEED] rounded-[13px] lg:rounded-[20px] w-full lg:max-w-[295px] aspect-square mb-2.5 xl:mb-4 overflow-hidden">
         {data.condition && (
           <span
-            className={`absolute left-2.5 top-2.5 xl:left-3 xl:top-3 z-10 rounded-full px-2.5 py-1 text-[10px] xl:text-xs font-medium ${
-              data.condition === "new"
-                ? "bg-black text-white"
-                : "bg-white text-black/70 border border-black/10"
-            }`}
+            className="absolute left-2.5 top-2.5 xl:left-3 xl:top-3 z-10 rounded-full border border-black/10 bg-white px-2.5 py-1 text-[10px] font-medium text-black/70 xl:text-xs"
           >
-            {data.condition === "new" ? "Brand New" : "Pre-Owned"}
+            {data.condition}
           </span>
         )}
         <Image

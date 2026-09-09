@@ -11,10 +11,11 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 type FiltersProps = {
   categories: FilterCategory[];
   brands: string[];
+  conditions: string[];
   onApplied?: () => void;
 };
 
-const Filters = ({ categories, brands, onApplied }: FiltersProps) => {
+const Filters = ({ categories, brands, conditions, onApplied }: FiltersProps) => {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -63,7 +64,7 @@ const Filters = ({ categories, brands, onApplied }: FiltersProps) => {
         }}
       />
       <hr className="border-t-black/10" />
-      <ConditionSection value={condition} onChange={setCondition} />
+      <ConditionSection value={condition} conditions={conditions} onChange={setCondition} />
       <hr className="border-t-black/10" />
       <DressStyleSection brands={brands} />
       <Button

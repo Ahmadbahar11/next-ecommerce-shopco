@@ -16,9 +16,10 @@ import { FilterCategory } from "./CategoriesSection";
 type MobileFiltersProps = {
   categories: FilterCategory[];
   brands: string[];
+  conditions: string[];
 };
 
-const MobileFilters = ({ categories, brands }: MobileFiltersProps) => {
+const MobileFilters = ({ categories, brands, conditions }: MobileFiltersProps) => {
   return (
     <>
       <Drawer>
@@ -40,7 +41,7 @@ const MobileFilters = ({ categories, brands }: MobileFiltersProps) => {
             <DrawerDescription className="hidden">filters</DrawerDescription>
           </DrawerHeader>
           <div className="max-h-[90%] overflow-y-auto w-full px-5 md:px-6 py-5 space-y-5 md:space-y-6">
-            <Filters categories={categories} brands={brands} />
+            <Filters categories={categories} brands={brands} conditions={conditions} />
           </div>
         </DrawerContent>
       </Drawer>

@@ -71,6 +71,9 @@ export default async function ShopPage({
   const brands = Array.from(
     new Set(allActiveProducts.map((p) => p.brand).filter(Boolean))
   ).sort();
+  const conditions = Array.from(
+    new Set(allActiveProducts.map((p) => p.condition).filter(Boolean))
+  ).sort();
 
   const filterCategories = categories.map((c) => ({ name: c.name, slug: c.slug }));
 
@@ -88,7 +91,7 @@ export default async function ShopPage({
               <span className="font-bold text-black text-xl">Filters</span>
               <FiSliders className="text-2xl text-black/40" />
             </div>
-            <Filters categories={filterCategories} brands={brands} />
+            <Filters categories={filterCategories} brands={brands} conditions={conditions} />
           </div>
           <div className="flex flex-col w-full space-y-5">
             <div className="flex flex-col lg:flex-row lg:justify-between">
@@ -96,7 +99,7 @@ export default async function ShopPage({
                 <h1 className="font-bold text-2xl md:text-[32px] capitalize">
                   {category?.name ?? "Football Gear"}
                 </h1>
-                <MobileFilters categories={filterCategories} brands={brands} />
+                <MobileFilters categories={filterCategories} brands={brands} conditions={conditions} />
               </div>
               <div className="flex flex-col sm:items-center sm:flex-row">
                 <span className="text-sm md:text-base text-black/60 mr-3">

@@ -82,7 +82,7 @@ const TopNavbar = () => {
             href="/"
             className={cn([
               integralCF.className,
-              "text-2xl lg:text-[32px] mb-2 mr-3 lg:mr-10",
+              "text-2xl lg:text-[32px] mb-2 mr-3 lg:mr-10 whitespace-nowrap",
             ])}
           >
             <StoreLogo />

@@ -19,5 +19,5 @@ export default function StoreLogo() {
     );
   }
 
-  return <>{branding.storeName}</>;
+  return <span className="inline-block min-w-max whitespace-nowrap">{branding.storeName}</span>;
 }

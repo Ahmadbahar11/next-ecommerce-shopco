@@ -93,8 +93,8 @@ function presentProduct(product: any) {
   return {
     ...base,
     brand: brandOption?.name ?? "",
-    condition: conditionOption?.slug ?? conditionOption?.name ?? "",
-    status: statusOption?.slug ?? statusOption?.name ?? "",
+    condition: conditionOption?.name ?? conditionOption?.slug ?? "",
+    status: statusOption?.name ?? statusOption?.slug ?? "",
   };
 }
 

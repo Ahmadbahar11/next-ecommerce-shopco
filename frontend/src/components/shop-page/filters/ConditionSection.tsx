@@ -9,18 +9,15 @@ import {
 } from "@/components/ui/accordion";
 import { cn } from "@/lib/utils";
 
-const CONDITIONS = [
-  { value: "", label: "All" },
-  { value: "new", label: "Brand New" },
-  { value: "used", label: "Pre-Owned" },
-];
-
 type ConditionSectionProps = {
   value: string;
+  conditions: string[];
   onChange: (value: string) => void;
 };
 
-const ConditionSection = ({ value, onChange }: ConditionSectionProps) => {
+const ConditionSection = ({ value, conditions, onChange }: ConditionSectionProps) => {
+  const options = [{ value: "", label: "All" }, ...conditions.map((condition) => ({ value: condition, label: condition }))];
+
   return (
     <Accordion type="single" collapsible defaultValue="filter-condition">
       <AccordionItem value="filter-condition" className="border-none">
@@ -29,7 +26,7 @@ const ConditionSection = ({ value, onChange }: ConditionSectionProps) => {
         </AccordionTrigger>
         <AccordionContent className="pt-4 pb-0">
           <div className="flex items-center flex-wrap">
-            {CONDITIONS.map((c) => (
+            {options.map((c) => (
               <button
                 key={c.value}
                 type="button"

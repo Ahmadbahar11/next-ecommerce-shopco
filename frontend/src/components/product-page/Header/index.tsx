@@ -26,13 +26,10 @@ const Header = ({ data }: { data: Product }) => {
               {data.condition && (
                 <span
                   className={cn([
-                    "rounded-full px-2.5 py-0.5 text-xs font-medium",
-                    data.condition === "new"
-                      ? "bg-black text-white"
-                      : "bg-[#F0F0F0] text-black/70",
+                    "rounded-full bg-[#F0F0F0] px-2.5 py-0.5 text-xs font-medium text-black/70",
                   ])}
                 >
-                  {data.condition === "new" ? "Brand New" : "Pre-Owned"}
+                  {data.condition}
                 </span>
               )}
             </div>
