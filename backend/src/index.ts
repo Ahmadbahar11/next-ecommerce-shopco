@@ -11,6 +11,7 @@ import authRouter from "./routes/auth";
 import ordersRouter from "./routes/orders";
 import customersRouter from "./routes/customers";
 import uploadRouter from "./routes/upload";
+import { logError } from "./lib/logger";
 
 const app = express();
 
@@ -34,15 +35,23 @@ app.use("/api/customers", customersRouter);
 app.use("/api/upload", uploadRouter);
 
 app.use((req, res) => {
+  logError(`Route not found: ${req.method} ${req.path}`, {
+    method: req.method,
+    path: req.path,
+    type: "notFound",
+  });
   res.status(404).json({ error: `No route for ${req.method} ${req.path}` });
 });
 
 app.use(
-  (err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
-    console.error(err);
+  (err: any, req: express.Request, res: express.Response, _next: express.NextFunction) => {
+    logError(err, { method: req.method, path: req.path });
     res.status(500).json({ error: "Internal server error" });
   }
 );
+
+process.on("uncaughtException", (error) => logError(error, { type: "uncaughtException" }));
+process.on("unhandledRejection", (error) => logError(error, { type: "unhandledRejection" }));
 
 const port = Number(process.env.PORT) || 4000;
 app.listen(port, () => {

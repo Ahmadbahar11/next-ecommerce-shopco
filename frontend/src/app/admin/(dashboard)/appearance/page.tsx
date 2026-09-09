@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react"
 import Image from "next/image"
 import { UploadIcon } from "lucide-react"
+import { toast } from "sonner"
 
 import { AdminPageHeader } from "@/components/admin/page-header"
 import { Button } from "@/components/ui/button"
@@ -31,6 +32,7 @@ export default function AppearancePage() {
   function save() {
     setBranding(draft)
     setSaved(true)
+    toast.success("Branding saved successfully")
     setTimeout(() => setSaved(false), 2000)
   }
 

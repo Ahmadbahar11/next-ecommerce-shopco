@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { MoreHorizontalIcon, PlusIcon } from "lucide-react"
+import { toast } from "sonner"
 
 import { AdminPageHeader } from "@/components/admin/page-header"
 import { Badge } from "@/components/ui/badge"
@@ -63,6 +64,7 @@ export default function ProductMetadataPage() {
             return
         }
         setError(message)
+        toast.error(message)
     }
 
     async function load(selectedKind = kind) {
@@ -112,6 +114,7 @@ export default function ProductMetadataPage() {
                 editingId === null ? await api.createProductStatus(data) : await api.updateProductStatus(editingId, data)
             }
             setDialogOpen(false)
+            toast.success(editingId === null ? `${kind} created successfully` : `${kind} updated successfully`)
             await load()
         } catch (err) {
             handleError(err)
@@ -126,6 +129,7 @@ export default function ProductMetadataPage() {
             if (kind === "brand") await api.deleteProductBrand(id)
             else if (kind === "condition") await api.deleteProductCondition(id)
             else await api.deleteProductStatus(id)
+            toast.success(`${kind} deleted successfully`)
             await load()
         } catch (err) {
             handleError(err)

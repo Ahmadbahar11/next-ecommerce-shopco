@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { toast } from "sonner"
 
 import { AdminPageHeader } from "@/components/admin/page-header"
 import { Button } from "@/components/ui/button"
@@ -21,6 +22,7 @@ export default function StoreDetailsPage() {
 
   function save() {
     setSaved(true)
+    toast.success("Store details saved successfully")
     setTimeout(() => setSaved(false), 2000)
   }
 

@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
 import { MoreHorizontalIcon, PlusIcon, SearchIcon, UploadCloudIcon } from "lucide-react"
+import { toast } from "sonner"
 
 import { AdminPageHeader } from "@/components/admin/page-header"
 import { Badge } from "@/components/ui/badge"
@@ -134,6 +135,7 @@ export default function ProductsPage() {
       return
     }
     setError(message)
+    toast.error(message)
   }
 
   useEffect(() => {
@@ -192,6 +194,7 @@ export default function ProductsPage() {
         await api.updateProduct(editingId, payload)
       }
       setDialogOpen(false)
+      toast.success(editingId === null ? "Product created successfully" : "Product updated successfully")
       await load()
     } catch (err) {
       handleError(err)
@@ -283,6 +286,7 @@ export default function ProductsPage() {
         gallery: [...(f.gallery ?? []), ...uploadedUrls],
         srcUrl: f.srcUrl || uploadedUrls[0] || f.srcUrl,
       }))
+      toast.success(`${uploadedUrls.length} image${uploadedUrls.length === 1 ? "" : "s"} uploaded`)
     } catch (err) {
       handleError(err)
     } finally {
@@ -301,6 +305,7 @@ export default function ProductsPage() {
   async function remove(id: number) {
     try {
       await api.deleteProduct(id)
+      toast.success("Product deleted successfully")
       await load()
     } catch (err) {
       handleError(err)

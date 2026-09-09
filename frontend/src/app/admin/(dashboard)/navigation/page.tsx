@@ -25,6 +25,7 @@ import {
   PlusIcon,
   TrashIcon,
 } from "lucide-react"
+import { toast } from "sonner"
 
 import { AdminPageHeader } from "@/components/admin/page-header"
 import { Badge } from "@/components/ui/badge"
@@ -211,10 +212,12 @@ export default function NavigationPage() {
       )
     }
     setDialogOpen(false)
+    toast.success(editingId === null ? "Navigation link added" : "Navigation link updated")
   }
 
   function remove(linkId: number) {
     setLinks((prev) => prev.filter((l) => l.id !== linkId))
+    toast.success("Navigation link removed")
   }
 
   function addChild() {
