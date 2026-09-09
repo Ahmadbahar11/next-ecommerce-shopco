@@ -7,7 +7,6 @@ import {
   ImageIcon,
   LayoutDashboardIcon,
   ListTreeIcon,
-  MapPinIcon,
   MegaphoneIcon,
   PackageIcon,
   TagsIcon,
@@ -15,7 +14,6 @@ import {
   SettingsIcon,
   ShoppingBagIcon,
   ShoppingCartIcon,
-  SquareMenuIcon,
   StarIcon,
   UsersIcon,
 } from "lucide-react"
@@ -73,24 +71,9 @@ const data = {
       icon: TagsIcon,
     },
     {
-      title: "Navigation Menu",
-      url: "/admin/navigation",
-      icon: SquareMenuIcon,
-    },
-    {
       title: "Banner",
       url: "/admin/banner",
       icon: MegaphoneIcon,
-    },
-    {
-      title: "Branding",
-      url: "/admin/appearance",
-      icon: ImageIcon,
-    },
-    {
-      title: "Store Details",
-      url: "/admin/store-details",
-      icon: MapPinIcon,
     },
     {
       title: "Reviews",
@@ -101,7 +84,7 @@ const data = {
   navSecondary: [
     {
       title: "Settings",
-      url: "#",
+      url: "/admin/settings/branding",
       icon: SettingsIcon,
     },
     {
