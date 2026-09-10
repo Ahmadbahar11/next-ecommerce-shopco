@@ -40,6 +40,11 @@ router.post("/", async (req: Request, res: Response) => {
     return res.status(400).json({ error: parsed.error.flatten() });
   }
   const { customer, shipping, items } = parsed.data;
+  const quantities = new Map<number, number>();
+  for (const item of items) {
+    quantities.set(item.productId, (quantities.get(item.productId) ?? 0) + item.quantity);
+  }
+  const normalizedItems = Array.from(quantities, ([productId, quantity]) => ({ productId, quantity }));
 
   try {
     const order = await prisma.$transaction(async (tx) => {
@@ -56,7 +61,7 @@ router.post("/", async (req: Request, res: Response) => {
         create: { name: customer.name, email: customer.email, phone: customer.phone },
       });
 
-      const productIds = items.map((i) => i.productId);
+      const productIds = normalizedItems.map((i) => i.productId);
       const products = await tx.product.findMany({
         where: { id: { in: productIds } },
         include: { statusOption: true },
@@ -71,7 +76,7 @@ router.post("/", async (req: Request, res: Response) => {
         quantity: number;
       }[] = [];
 
-      for (const item of items) {
+      for (const item of normalizedItems) {
         const product = productMap.get(item.productId);
         if (!product) throw new Error(`PRODUCT_NOT_FOUND:${item.productId}`);
         if (product.statusOption?.slug !== "active") {

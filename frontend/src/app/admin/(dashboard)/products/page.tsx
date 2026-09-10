@@ -53,6 +53,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { api, ApiCategory, ApiLookupOption, ApiProduct, ProductInput } from "@/lib/api"
+import { getToken } from "@/lib/admin-auth"
 import { formatPrice } from "@/lib/currency"
 import {
   UK_SIZE_OPTIONS,
@@ -272,6 +273,7 @@ export default function ProductsPage() {
       const apiBase = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000"
       const res = await fetch(`${apiBase}/api/upload`, {
         method: "POST",
+        headers: getToken() ? { Authorization: `Bearer ${getToken()}` } : undefined,
         body: formData,
       })
 

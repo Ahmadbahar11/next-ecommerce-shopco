@@ -1,7 +1,8 @@
 import fs from "fs";
 import path from "path";
-import { Router } from "express";
+import { Request, Response, Router } from "express";
 import multer from "multer";
+import { authenticate, authorize } from "../middleware/auth";
 
 const router = Router();
 const uploadDir = path.resolve(process.cwd(), "uploads", "products");
@@ -42,24 +43,24 @@ function buildPublicUrl(filename: string) {
   return `${backendBaseUrl.replace(/\/$/, "")}/uploads/products/${filename}`;
 }
 
-router.post("/", upload.array("files", 10), (req, res) => {
-  const uploadedFiles = Array.isArray(req.files) ? req.files : [];
+router.post("/", [authenticate, authorize("admin")], upload.array("files", 10), (req: Request, res: Response) => {
+  const uploadedFiles = Array.isArray(req.files) ? (req.files as Express.Multer.File[]) : [];
 
   if (!uploadedFiles.length) {
     return res.status(400).json({ error: "No files uploaded" });
   }
 
-  const urls = uploadedFiles.map((file) => buildPublicUrl(file.filename));
+  const urls = uploadedFiles.map((file: Express.Multer.File) => buildPublicUrl(file.filename));
 
   return res.status(200).json({
     urls,
     url: urls[0],
     filename: uploadedFiles[0]?.filename,
-    filenames: uploadedFiles.map((file) => file.filename),
+    filenames: uploadedFiles.map((file: Express.Multer.File) => file.filename),
   });
 });
 
-router.post("/single", upload.single("file"), (req, res) => {
+router.post("/single", [authenticate, authorize("admin")], upload.single("file"), (req: Request, res: Response) => {
   if (!req.file) {
     return res.status(400).json({ error: "No file uploaded" });
   }
