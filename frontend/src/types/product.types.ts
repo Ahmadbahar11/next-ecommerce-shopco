@@ -16,6 +16,11 @@ export type Product = {
   brand?: string;
   condition?: string;
   size?: string;
+  conditionNotes?: string;
+  defectNotes?: string;
+  authenticityVerified?: boolean;
+  includesOriginalBox?: boolean;
+  insoleLengthMm?: number | null;
   stock?: number;
   categoryId?: number;
   categoryName?: string;

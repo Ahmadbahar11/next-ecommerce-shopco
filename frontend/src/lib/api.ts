@@ -45,6 +45,11 @@ export type ApiProduct = {
   brand: string;
   condition: string;
   size: string;
+  conditionNotes: string | null;
+  defectNotes: string | null;
+  authenticityVerified: boolean;
+  includesOriginalBox: boolean;
+  insoleLengthMm: number | null;
   price: number;
   discountPercentage: number;
   stock: number;
@@ -161,6 +166,11 @@ export function toProduct(p: ApiProduct): Product {
     brand: p.brand,
     condition: p.condition,
     size: p.size,
+    conditionNotes: p.conditionNotes ?? undefined,
+    defectNotes: p.defectNotes ?? undefined,
+    authenticityVerified: p.authenticityVerified,
+    includesOriginalBox: p.includesOriginalBox,
+    insoleLengthMm: p.insoleLengthMm,
     stock: p.stock,
     categoryId: p.categoryId,
     categoryName: p.category?.name,

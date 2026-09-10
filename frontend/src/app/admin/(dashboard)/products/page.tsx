@@ -31,6 +31,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+import { Checkbox } from "@/components/ui/checkbox"
 import {
   Select,
   SelectContent,
@@ -81,6 +82,11 @@ const emptyProduct: ProductInput = {
   brand: "",
   condition: "new",
   size: "",
+  conditionNotes: null,
+  defectNotes: null,
+  authenticityVerified: false,
+  includesOriginalBox: false,
+  insoleLengthMm: null,
   price: 0,
   discountPercentage: 0,
   stock: 0,
@@ -171,6 +177,11 @@ export default function ProductsPage() {
       brand: product.brand,
       condition: product.condition,
       size: product.size,
+      conditionNotes: product.conditionNotes,
+      defectNotes: product.defectNotes,
+      authenticityVerified: product.authenticityVerified,
+      includesOriginalBox: product.includesOriginalBox,
+      insoleLengthMm: product.insoleLengthMm,
       price: product.price,
       discountPercentage: product.discountPercentage,
       stock: product.stock,
@@ -666,6 +677,57 @@ export default function ProductsPage() {
                     <span className="rounded-full border px-2 py-1">{sizeMeta.eu}</span>
                   </div>
                 )}
+              </div>
+            </div>
+
+            <div className="grid gap-4 rounded-md border p-4">
+              <div className="grid gap-2">
+                <Label htmlFor="condition-notes">Condition notes</Label>
+                <Textarea
+                  id="condition-notes"
+                  rows={2}
+                  placeholder="Overall wear, cleaning, and fit notes"
+                  value={form.conditionNotes ?? ""}
+                  onChange={(e) => setForm((f) => ({ ...f, conditionNotes: e.target.value || null }))}
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="defect-notes">Defects or visible wear</Label>
+                <Textarea
+                  id="defect-notes"
+                  rows={2}
+                  placeholder="Describe scratches, sole wear, stains, or missing parts"
+                  value={form.defectNotes ?? ""}
+                  onChange={(e) => setForm((f) => ({ ...f, defectNotes: e.target.value || null }))}
+                />
+              </div>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    id="authenticity-verified"
+                    checked={form.authenticityVerified}
+                    onCheckedChange={(checked) => setForm((f) => ({ ...f, authenticityVerified: checked === true }))}
+                  />
+                  <Label htmlFor="authenticity-verified">Authenticity verified</Label>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    id="original-box"
+                    checked={form.includesOriginalBox}
+                    onCheckedChange={(checked) => setForm((f) => ({ ...f, includesOriginalBox: checked === true }))}
+                  />
+                  <Label htmlFor="original-box">Includes original box</Label>
+                </div>
+              </div>
+              <div className="grid max-w-xs gap-2">
+                <Label htmlFor="insole-length">Insole length (mm)</Label>
+                <Input
+                  id="insole-length"
+                  type="number"
+                  min={1}
+                  value={form.insoleLengthMm ?? ""}
+                  onChange={(e) => setForm((f) => ({ ...f, insoleLengthMm: e.target.value ? Number(e.target.value) : null }))}
+                />
               </div>
             </div>
 

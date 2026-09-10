@@ -81,6 +81,11 @@ model Product {
   srcUrl             String
   gallery            String[]
   size               String
+  conditionNotes     String?
+  defectNotes        String?
+  authenticityVerified Boolean @default(false)
+  includesOriginalBox Boolean @default(false)
+  insoleLengthMm     Int?
   price              Int
   discountPercentage Int                     @default(0)
   stock              Int                     @default(0)

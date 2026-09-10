@@ -63,6 +63,15 @@ const Header = ({ data }: { data: Product }) => {
             {data.description ??
               "Carefully inspected football gear, guaranteed authentic and ready for match day."}
           </p>
+          {(data.conditionNotes || data.defectNotes || data.authenticityVerified || data.includesOriginalBox || data.insoleLengthMm) && (
+            <div className="mb-5 grid gap-2 rounded-md border border-black/10 p-4 text-sm text-black/70">
+              {data.conditionNotes && <p><strong>Condition:</strong> {data.conditionNotes}</p>}
+              {data.defectNotes && <p><strong>Visible wear:</strong> {data.defectNotes}</p>}
+              {data.authenticityVerified && <p>Authenticity verified</p>}
+              {data.includesOriginalBox && <p>Original box included</p>}
+              {data.insoleLengthMm && <p><strong>Insole length:</strong> {data.insoleLengthMm} mm</p>}
+            </div>
+          )}
           <hr className="h-[1px] border-t-black/10 mb-5" />
           <SizeSelection data={data} />
           <hr className="hidden md:block h-[1px] border-t-black/10 my-5" />
